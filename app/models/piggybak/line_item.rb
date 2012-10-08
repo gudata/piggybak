@@ -18,8 +18,17 @@ module Piggybak
     after_destroy :increase_inventory, :if => Proc.new { |line_item| line_item.reference_type == 'Sellable' && !line_item.sellable.unlimited_inventory }
     after_update :update_inventory, :if => Proc.new { |line_item| line_item.reference_type == 'Sellable' && !line_item.sellable.unlimited_inventory }
     
-    attr_accessible :sellable_id, :price, :total, :description, :quantity
-    
+    attr_accessible :sellable_id, :price, :unit_price, :description, :quantity
+
+    belongs_to :shipment, :class_name => "::Piggybak::Shipment", :inverse_of => :line_item, :foreign_key => "reference_id" #, :foreign_type => "Piggybak::Shipment"
+    accepts_nested_attributes_for :shipment
+
+    belongs_to :payment, :class_name => "::Piggybak::Payment", :inverse_of => :line_item, :foreign_key => "reference_id" #, :foreign_type => "Piggybak::Payment"
+    accepts_nested_attributes_for :payment
+
+    belongs_to :adjustment, :class_name => "::Piggybak::Adjustment", :inverse_of => :line_item, :foreign_key => "reference_id" #, :foreign_type => "Piggybak::Adjustment"
+    accepts_nested_attributes_for :adjustment
+
     def variant_id
       self.sellable_id
     end

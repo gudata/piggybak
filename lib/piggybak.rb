@@ -205,15 +205,9 @@ module Piggybak
           visible false
 
           edit do
-            field :reference
-            field :quantity
-            #field :total do
-            #  read_only true
-            #  formatted_value do
-            #    value ? "$%.2f" % value : '-'
-            #  end
-            #  help "This will automatically be calculated at the time of processing."
-            #end
+            field :reference do
+              partial "polymorphic_nested"
+            end
           end
         end
       
@@ -240,7 +234,6 @@ module Piggybak
           end
         end
     
-=begin 
         config.model Piggybak::Adjustment do
           object_label_method :admin_label
           visible false
@@ -275,9 +268,7 @@ module Piggybak
             end
           end
         end
-=end
 
-=begin 
         config.model Piggybak::Payment do
           object_label_method :admin_label
           visible false
@@ -334,7 +325,6 @@ module Piggybak
             end
           end
         end
-=end
       
         config.model Piggybak::PaymentMethod do
           navigation_label "Configuration"
@@ -463,8 +453,7 @@ module Piggybak
           end
         end
       
-        # config.model Piggybak::Variant do
-        #   label "Variant"
+        config.model Piggybak::Sellable do
         #           navigation_label "Orders"
         #   object_label_method :admin_label
         #   edit do
@@ -484,7 +473,7 @@ module Piggybak
         #     field :quantity
         #     field :active
         #   end
-        # end
+        end
       end
       
     end

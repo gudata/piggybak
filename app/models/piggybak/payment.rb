@@ -3,7 +3,7 @@ module Piggybak
     belongs_to :order
     acts_as_changer
     belongs_to :payment_method
-    #belongs_to :line_item
+    has_one :line_item, :as => "reference", :class_name => "::Piggybak::LineItem"
 
     validates_presence_of :status
     validates_presence_of :payment_method_id

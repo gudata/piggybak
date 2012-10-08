@@ -10,6 +10,8 @@ module Piggybak
     validates_presence_of :source
 
     before_validation :set_source
+    
+    has_one :line_item, :as => "reference", :class_name => "::Piggybak::LineItem"
 
     def set_source
       if self.source.nil? && self.user_id.present?
