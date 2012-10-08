@@ -121,7 +121,6 @@ module Piggybak
         order.shipments.each do |shipment|
           shipment.mark_for_destruction
         end
-        order.update_attribute(:tax_charge, 0.00)
         order.update_attribute(:total, 0.00)
         order.update_attribute(:to_be_cancelled, true)
 

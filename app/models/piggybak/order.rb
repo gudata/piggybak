@@ -3,7 +3,6 @@ module Piggybak
     has_many :line_items, :inverse_of => :order
     has_many :payments, :inverse_of => :order
     has_many :shipments, :inverse_of => :order
-    has_many :adjustments, :inverse_of => :order
     has_many :order_notes, :inverse_of => :order
 
     belongs_to :billing_address, :class_name => "Piggybak::Address"
@@ -12,10 +11,9 @@ module Piggybak
   
     accepts_nested_attributes_for :billing_address, :allow_destroy => true
     accepts_nested_attributes_for :shipping_address, :allow_destroy => true
-    accepts_nested_attributes_for :shipments, :allow_destroy => true
     accepts_nested_attributes_for :line_items, :allow_destroy => true
     accepts_nested_attributes_for :payments
-    accepts_nested_attributes_for :adjustments, :allow_destroy => true
+    accepts_nested_attributes_for :shipments, :allow_destroy => true
     accepts_nested_attributes_for :order_notes
 
     attr_accessor :recorded_changes
@@ -42,8 +40,8 @@ module Piggybak
 
       self.billing_address ||= Piggybak::Address.new
       self.shipping_address ||= Piggybak::Address.new
-      self.shipments ||= [Piggybak::Shipment.new] 
-      self.payments ||= [Piggybak::Payment.new]
+      #self.shipments ||= [Piggybak::Shipment.new] 
+      #self.payments ||= [Piggybak::Payment.new]
       if self.payments.any?
         self.payments.first.payment_method_id = Piggybak::PaymentMethod.find_by_active(true).id
       end
@@ -70,14 +68,7 @@ module Piggybak
         end
       end
 
-      payments_total = self.payments.inject(0) { |s, payment| s + payment.total }
-
-      adjustments.each do |adjustment|
-        if !adjustment._destroy
-          payments_total += adjustment.total.round(2)
-        end
-      end
-
+      # calculate total_due here based on line items
       self.total_due = (self.total - payments_total).round(2)
 
       !has_errors
@@ -96,9 +87,10 @@ module Piggybak
     def add_line_items(cart)
       cart.update_quantities
       cart.items.each do |item|
-        line_item = Piggybak::LineItem.new({ :sellable_id => item[:sellable].id,
-          :price => item[:sellable].price,
-          :total => item[:sellable].price*item[:quantity],
+        line_item = Piggybak::LineItem.new({ :reference_id => item[:sellable].id,
+          :reference_type => "Sellable",
+          :unit_price => item[:sellable].price,
+          :price => item[:sellable].price*item[:quantity],
           :description => item[:sellable].description,
           :quantity => item[:quantity] })
         self.line_items << line_item
@@ -115,6 +107,7 @@ module Piggybak
 
       return if self.to_be_cancelled
 
+=begin
       self.line_items.each do |line_item|
         if self.status != "shipped"
           line_item.description = line_item.sellable.description
@@ -126,6 +119,7 @@ module Piggybak
           line_item.total = 0
         end
       end
+=end
     end
 
     def prepare_for_destruction
@@ -139,15 +133,12 @@ module Piggybak
     def update_totals
       self.total = 0
 
-      self.line_items.each do |line_item|
-        if !line_item._destroy
-          self.total += line_item.total 
-        end
-      end
+      # remove line item with tax charge
+      # readd line item with tax charge
+      #self.tax_charge = TaxMethod.calculate_tax(self)
 
-      self.tax_charge = TaxMethod.calculate_tax(self)
-      self.total += self.tax_charge
-
+      #recalculate shipping costs
+=begin
       shipments.each do |shipment|
         if !shipment._destroy
           if (shipment.new_record? || shipment.status != 'shipped') && shipment.shipping_method
@@ -159,16 +150,13 @@ module Piggybak
           self.total += shipping_cast
         end
       end
+=end
 
-      payments_total = self.payments.inject(0) { |s, payment| s + payment.total }
-
-      adjustments.each do |adjustment|
-        if !adjustment._destroy
-          payments_total += adjustment.total.round(2)
-        end
-      end
-
-      self.total_due = (self.total - payments_total).round(2)
+      #self.line_items.each do |line_item|
+      #  if !line_item._destroy
+      #    self.total += line_item.price
+      #  end
+      #end
     end
 
     def update_status
@@ -215,6 +203,7 @@ module Piggybak
     def subtotal
       v = 0
 
+      # change to view line_items.sellables
       self.line_items.each do |line_item|
         if !line_item._destroy
           v += line_item.total 

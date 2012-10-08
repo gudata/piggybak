@@ -3,9 +3,9 @@ module Piggybak
     belongs_to :order
     acts_as_changer
     belongs_to :payment_method
+    #belongs_to :line_item
 
     validates_presence_of :status
-    validates_presence_of :total
     validates_presence_of :payment_method_id
     validates_presence_of :month
     validates_presence_of :year
@@ -71,8 +71,8 @@ module Piggybak
 
     def admin_label
       if !self.new_record? 
-        return "Payment ##{self.id} (#{self.created_at.strftime("%m-%d-%Y")}): " + 
-          "$#{"%.2f" % self.total}"
+        return "Payment ##{self.id} (#{self.created_at.strftime("%m-%d-%Y")}): " #+ 
+          #"$#{"%.2f" % self.total}" reference line item total here instead
       else
         return ""
       end

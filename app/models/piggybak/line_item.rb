@@ -5,16 +5,18 @@ module Piggybak
     belongs_to :sellable
     alias :variant :sellable
   
-    validates_presence_of :sellable_id
-    validates_presence_of :total
     validates_presence_of :price
     validates_presence_of :description
     validates_presence_of :quantity
     validates_numericality_of :quantity, :only_integer => true, :greater_than_or_equal_to => 0
 
-    after_create :decrease_inventory, :if => Proc.new { |line_item| !line_item.sellable.unlimited_inventory }
-    after_destroy :increase_inventory, :if => Proc.new { |line_item| !line_item.sellable.unlimited_inventory }
-    after_update :update_inventory, :if => Proc.new { |line_item| !line_item.sellable.unlimited_inventory }
+    scope :sellables, where(:reference_type => 'Variant')
+    belongs_to :reference, :polymorphic => true, :inverse_of => :line_item
+    attr_accessible :reference_id, :reference_type
+
+    after_create :decrease_inventory, :if => Proc.new { |line_item| line_item.reference_type == 'Sellable' && !line_item.sellable.unlimited_inventory }
+    after_destroy :increase_inventory, :if => Proc.new { |line_item| line_item.reference_type == 'Sellable' && !line_item.sellable.unlimited_inventory }
+    after_update :update_inventory, :if => Proc.new { |line_item| line_item.reference_type == 'Sellable' && !line_item.sellable.unlimited_inventory }
     
     attr_accessible :sellable_id, :price, :total, :description, :quantity
     

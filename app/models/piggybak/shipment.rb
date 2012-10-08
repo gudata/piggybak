@@ -3,9 +3,9 @@ module Piggybak
     belongs_to :order
     acts_as_changer
     belongs_to :shipping_method
+    #belongs_to :line_item
 
     validates_presence_of :status
-    validates_presence_of :total
     validates_presence_of :shipping_method_id
     
     attr_accessible :shipping_method_id
@@ -17,8 +17,8 @@ module Piggybak
     def admin_label
       "Shipment ##{self.id}<br />" +
       "#{self.shipping_method.description}<br />" +
-      "Status: #{self.status}<br />" +
-      "$#{"%.2f" % self.total}"
+      "Status: #{self.status}<br />" #+
+      #"$#{"%.2f" % self.total}" reference line item total here instead
     end
   end
 end

@@ -53,11 +53,6 @@ module Piggybak
                 "$%.2f" % value
               end
             end
-            field :tax_charge do
-              formatted_value do
-                "$%.2f" % value
-              end
-            end
             field :total_due do
               formatted_value do
                 "$%.2f" % value
@@ -72,8 +67,6 @@ module Piggybak
             field :line_items
             field :billing_address
             field :shipping_address
-            field :shipments
-            field :payments
             field :order_notes do
               pretty_value do
                 value.inject([]) { |arr, o| arr << o.details }.join("<br /><br />").html_safe
@@ -148,18 +141,6 @@ module Piggybak
               active true
               help ""
             end
-            field :shipments do
-              active true
-              help ""
-            end
-            field :adjustments do
-              active true
-              help ""
-            end
-            field :payments do
-              active true
-              help ""
-            end
             field :order_notes do
               active true
             end
@@ -224,15 +205,15 @@ module Piggybak
           visible false
 
           edit do
-            field :sellable
+            field :reference
             field :quantity
-            field :total do
-              read_only true
-              formatted_value do
-                value ? "$%.2f" % value : '-'
-              end
-              help "This will automatically be calculated at the time of processing."
-            end
+            #field :total do
+            #  read_only true
+            #  formatted_value do
+            #    value ? "$%.2f" % value : '-'
+            #  end
+            #  help "This will automatically be calculated at the time of processing."
+            #end
           end
         end
       
@@ -249,16 +230,17 @@ module Piggybak
             field :status do
               label "Shipping Status"
             end
-            field :total do
-              read_only true
-              formatted_value do
-                "$%.2f" % value
-              end
-              help "This will automatically be calculated at the time of processing."
-            end
+            #field :total do
+            #  read_only true
+            #  formatted_value do
+            #    "$%.2f" % value
+            #  end
+            #  help "This will automatically be calculated at the time of processing."
+            #end
           end
         end
-     
+    
+=begin 
         config.model Piggybak::Adjustment do
           object_label_method :admin_label
           visible false
@@ -293,7 +275,9 @@ module Piggybak
             end
           end
         end
- 
+=end
+
+=begin 
         config.model Piggybak::Payment do
           object_label_method :admin_label
           visible false
@@ -350,6 +334,7 @@ module Piggybak
             end
           end
         end
+=end
       
         config.model Piggybak::PaymentMethod do
           navigation_label "Configuration"
