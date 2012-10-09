@@ -1,8 +1,6 @@
 module Piggybak
   class Order < ActiveRecord::Base
     has_many :line_items, :inverse_of => :order
-    has_many :payments, :inverse_of => :order
-    has_many :shipments, :inverse_of => :order
     has_many :order_notes, :inverse_of => :order
 
     belongs_to :billing_address, :class_name => "Piggybak::Address"
@@ -12,8 +10,6 @@ module Piggybak
     accepts_nested_attributes_for :billing_address, :allow_destroy => true
     accepts_nested_attributes_for :shipping_address, :allow_destroy => true
     accepts_nested_attributes_for :line_items, :allow_destroy => true
-    accepts_nested_attributes_for :payments
-    accepts_nested_attributes_for :shipments, :allow_destroy => true
     accepts_nested_attributes_for :order_notes
 
     attr_accessor :recorded_changes
@@ -21,7 +17,7 @@ module Piggybak
     attr_accessor :was_new_record
     attr_accessor :disable_order_notes
 
-    validates_presence_of :status, :email, :phone, :total, :total_due, :tax_charge, :created_at, :ip_address, :user_agent
+    validates_presence_of :status, :email, :phone, :total, :total_due, :created_at, :ip_address, :user_agent
 
     after_initialize :initialize_nested, :initialize_request
     before_validation :set_defaults, :prepare_for_destruction
@@ -42,9 +38,9 @@ module Piggybak
       self.shipping_address ||= Piggybak::Address.new
       #self.shipments ||= [Piggybak::Shipment.new] 
       #self.payments ||= [Piggybak::Payment.new]
-      if self.payments.any?
-        self.payments.first.payment_method_id = Piggybak::PaymentMethod.find_by_active(true).id
-      end
+      #if self.payments.any?
+      #  self.payments.first.payment_method_id = Piggybak::PaymentMethod.find_by_active(true).id
+      ##end
     end
 
     def initialize_request
@@ -102,7 +98,6 @@ module Piggybak
       self.status ||= "new"
       self.total = 0
       self.total_due = 0
-      self.tax_charge = 0
       self.disable_order_notes = false
 
       return if self.to_be_cancelled

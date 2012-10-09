@@ -3,7 +3,7 @@ module Piggybak
     belongs_to :order
     acts_as_changer
     belongs_to :shipping_method
-    has_one :line_item, :as => "reference", :class_name => "::Piggybak::LineItem"
+    belongs_to :line_item
 
     validates_presence_of :status
     validates_presence_of :shipping_method_id

@@ -3,7 +3,7 @@ module Piggybak
     belongs_to :order
     acts_as_changer
     belongs_to :payment_method
-    has_one :line_item, :as => "reference", :class_name => "::Piggybak::LineItem"
+    belongs_to :line_item
 
     validates_presence_of :status
     validates_presence_of :payment_method_id
@@ -33,8 +33,8 @@ module Piggybak
         "month" => self.month,
         "year" => self.year,
         "verification_value" => self.verification_value,
-        "first_name" => self.order.billing_address.firstname,
-        "last_name" => self.order.billing_address.lastname }
+        "first_name" => self.line_item ? self.line_item.order.billing_address.firstname : nil,
+        "last_name" => self.line_item ? self.line_item.order.billing_address.lastname : nil }
     end
 
     def process

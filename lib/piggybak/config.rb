@@ -11,6 +11,7 @@ module Piggybak
       attr_accessor :logging
       attr_accessor :logging_file
       attr_accessor :whois_url
+      attr_accessor :line_item_types
 
       def reset
         @email_sender = "support@piggybak.org"
@@ -22,6 +23,10 @@ module Piggybak
                                  "::Piggybak::ShippingCalculator::Free",
                                  "::Piggybak::ShippingCalculator::Range"]
         @tax_calculators = ["::Piggybak::TaxCalculator::Percent"]
+
+        @line_item_types = ["::Piggybak::Payment",
+                            "::Piggybak::Shipment",
+                            "::Piggybak::Adjustment"]
 
         @default_country = "US"
 

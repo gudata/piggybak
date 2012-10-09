@@ -1,20 +1,6 @@
-:ruby
-  type_collection = field.polymorphic_type_collection
-  type_column = field.association[:foreign_type].to_s
-  selected_type = field.bindings[:object].send(type_column)
-  collection = field.associated_collection(selected_type)
-  selected = field.bindings[:object].send(field.association[:name])
-  column_type_dom_id = form.dom_id(field).sub(field.method_name.to_s, type_column)
+= form.select "reference_type", [["shipment", "::Piggybak::Shipment"], ["payment", "::Piggybak::Payment"], ["adjustment", "::Piggybak::Adjustment"]], {}, :onchange => "$(this).parent().parent().siblings('.has_one_association_type').hide();$(this).parent().parent().siblings('.' + $(this).val().replace('::Piggybak::', '').toLowerCase() + '_field').show();"
 
-= form.select type_column, type_collection, {:include_blank => true, :selected => selected_type}, :id => column_type_dom_id, :data => { :polymorphic => true, :urls => field.polymorphic_type_urls.to_json }, :onchange => "$(this).siblings('.dynamic').hide();$(this).siblings('.new_' + $(this).val().replace('Piggybak::', '').toLowerCase()).show();"
-
-%div{:class => "new_sellable dynamic"}
-  = form.select field.method_name, collection, {:include_blank => true, :selected => selected.try(:id)}, :style => "margin-left:10px;"
-  = form.send "text_field", "quantity"
-
-- ["shipment", "payment", "adjustment"].each do |field_name|
-  %div{:class => "new_#{field_name} dynamic"}
-    - form.object.send("build_#{field_name}") unless form.object.send(field_name)
-    .tabs
-      = form.fields_for field_name do |nested_form|
-        = nested_form.generate({:action => :nested, :model_config => RailsAdmin.config("Piggybak::#{field_name.to_s.classify}".constantize), :nested_in => field_name })
+%script
+  $.each($('.line_item_type_field select'), function(i, el) {
+  $(el).parent().parent().siblings('.has_one_association_type').hide();$(el).parent().parent().siblings('.' + $(el).val().replace('::Piggybak::', '').toLowerCase() + '_field').show();
+  });

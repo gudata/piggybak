@@ -205,8 +205,18 @@ module Piggybak
           visible false
 
           edit do
-            field :reference do
+            field :line_item_type do
+              label "Line Item Type"
               partial "polymorphic_nested"
+            end
+            field :payment do
+              active true
+            end
+            field :shipment do
+              active true
+            end
+            field :adjustment do
+              active true
             end
           end
         end
@@ -250,15 +260,6 @@ module Piggybak
               end 
               read_only do 
                 !bindings[:object].new_record?
-              end 
-            end
-            field :total do
-              help "<ul><li>Enter a negative value representing the customer refund amount. (This should be done AFTER completing a refund in the payment gateway) This will balance the invoice and remove the unbalanced status.</li></ul>".html_safe
-              read_only do 
-                !bindings[:object].new_record?
-              end
-              formatted_value do
-                "$%.2f" % value
               end 
             end
             field :note do
