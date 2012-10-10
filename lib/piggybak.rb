@@ -208,6 +208,7 @@ module Piggybak
             field :line_item_type do
               label "Line Item Type"
               partial "polymorphic_nested"
+              help ""
             end
             field :payment do
               active true
@@ -215,9 +216,17 @@ module Piggybak
             field :shipment do
               active true
             end
-            field :adjustment do
-              active true
+            field :sellable do
+              label "Sellable"
+              partial "sellable"
             end
+            field :price do
+              visible do
+                bindings[:object].new_record?
+              end
+            end
+            field :quantity
+            field :description  
           end
         end
       
@@ -313,16 +322,6 @@ module Piggybak
               read_only do 
                 !bindings[:object].new_record?
               end 
-            end
-            field :total do
-              read_only true
-              visible do
-                !bindings[:object].new_record?
-              end 
-              formatted_value do
-                "$%.2f" % value
-              end
-              help "This will automatically be calculated at the time of processing."
             end
           end
         end

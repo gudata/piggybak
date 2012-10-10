@@ -37,19 +37,18 @@ module Piggybak
         "last_name" => self.line_item ? self.line_item.order.billing_address.lastname : nil }
     end
 
-    def process
+    def process(order)
       ActiveMerchant::Billing::Base.mode = Piggybak.config.activemerchant_mode
 
       if self.new_record?
         payment_gateway = self.payment_method.klass.constantize
         gateway = payment_gateway::KLASS.new(self.payment_method.key_values)
         p_credit_card = ActiveMerchant::Billing::CreditCard.new(self.credit_card)
-        gateway_response = gateway.authorize(self.order.total_due*100, p_credit_card, :address => self.order.avs_address)
+        gateway_response = gateway.authorize(order.total_due*100, p_credit_card, :address => order.avs_address)
         if gateway_response.success?
-          self.attributes = { :total => self.order.total_due, 
-                              :transaction_id => payment_gateway.transaction_id(gateway_response),
+          self.attributes = { :transaction_id => payment_gateway.transaction_id(gateway_response),
                               :masked_number => self.number.mask_cc_number }
-          gateway.capture(self.order.total_due*100, gateway_response.authorization, { :credit_card => p_credit_card } )
+          gateway.capture(order.total_due*100, gateway_response.authorization, { :credit_card => p_credit_card } )
           return true
   	    else
   	      self.errors.add :payment_method_id, gateway_response.message

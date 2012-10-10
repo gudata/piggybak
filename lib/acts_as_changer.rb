@@ -4,9 +4,9 @@ module Piggybak
 
     module ClassMethods
       def acts_as_changer
-        after_create :document_new_item
-        after_update :document_nested_change
-        after_destroy :document_destroy_item
+        #after_create :document_new_item
+        #after_update :document_nested_change
+        #after_destroy :document_destroy_item
       end
     end
 

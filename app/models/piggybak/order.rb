@@ -19,8 +19,8 @@ module Piggybak
 
     validates_presence_of :status, :email, :phone, :total, :total_due, :created_at, :ip_address, :user_agent
 
-    after_initialize :initialize_nested, :initialize_request
-    before_validation :set_defaults, :prepare_for_destruction
+    after_initialize :initialize_defaults
+    before_validation :prepare_for_destruction
     after_validation :update_totals
     before_save :process_payments, :update_status, :set_new_record
     after_save :record_order_note
@@ -31,21 +31,20 @@ module Piggybak
                     :shipping_address_attributes, :payments_attributes,
                     :shipments_attributes
                     
-    def initialize_nested
+    def initialize_defaults
       self.recorded_changes ||= []
 
       self.billing_address ||= Piggybak::Address.new
       self.shipping_address ||= Piggybak::Address.new
-      #self.shipments ||= [Piggybak::Shipment.new] 
-      #self.payments ||= [Piggybak::Payment.new]
-      #if self.payments.any?
-      #  self.payments.first.payment_method_id = Piggybak::PaymentMethod.find_by_active(true).id
-      ##end
-    end
 
-    def initialize_request
       self.ip_address ||= 'admin'
       self.user_agent ||= 'admin'
+
+      self.created_at ||= Time.now
+      self.status ||= "new"
+      self.total ||= 0
+      self.total_due ||= 0
+      self.disable_order_notes = false
     end
 
     def initialize_user(user, on_post)
@@ -58,16 +57,16 @@ module Piggybak
     def process_payments
       has_errors = false
 
-      self.payments.each do |payment|
-        if(!payment.process)
-          has_errors = true
+      self.line_items.select { |li| li.line_item_type == "payment" }.each do |line_item|
+        if line_item.payment.process(self)
+          line_item.price = self.total_due
+          self.total_due = 0
+        else
+          return false
         end
-      end
+      end 
 
-      # calculate total_due here based on line items
-      self.total_due = (self.total - payments_total).round(2)
-
-      !has_errors
+      true
     end
 
     def record_order_note
@@ -94,13 +93,7 @@ module Piggybak
     end
 
     def set_defaults
-      self.created_at ||= Time.now
-      self.status ||= "new"
-      self.total = 0
-      self.total_due = 0
-      self.disable_order_notes = false
-
-      return if self.to_be_cancelled
+      #return if self.to_be_cancelled
 
 =begin
       self.line_items.each do |line_item|
@@ -127,31 +120,26 @@ module Piggybak
 
     def update_totals
       self.total = 0
+      self.total_due = 0
+Rails.logger.warn "stephie: #{self.errors.inspect}"
 
-      # remove line item with tax charge
-      # readd line item with tax charge
-      #self.tax_charge = TaxMethod.calculate_tax(self)
-
-      #recalculate shipping costs
-=begin
-      shipments.each do |shipment|
-        if !shipment._destroy
-          if (shipment.new_record? || shipment.status != 'shipped') && shipment.shipping_method
-            calculator = shipment.shipping_method.klass.constantize
-            shipment.total = calculator.rate(shipment.shipping_method, self)
-          end
-
-          shipping_cast = ((shipment.total*100).to_i).to_f/100
-          self.total += shipping_cast
+      if self.line_items.taxes.any?
+        self.line_items.taxes.each do |line_item|
+          line_item.destroy
         end
       end
-=end
 
-      #self.line_items.each do |line_item|
-      #  if !line_item._destroy
-      #    self.total += line_item.price
-      #  end
-      #end
+      tax = TaxMethod.calculate_tax(self)
+      if tax > 0
+        LineItem.create({ :order_id => self.id, :quantity => 1, :description => "Tax Charge", :price => tax })
+      end
+
+      self.line_items.each do |line_item|
+        if !line_item._destroy
+          self.total += line_item.price if line_item.price.to_f > 0
+          self.total_due += line_item.price.to_f
+        end
+      end
     end
 
     def update_status
@@ -162,9 +150,9 @@ module Piggybak
       else
         if self.to_be_cancelled
           self.status = "cancelled"
-        elsif self.shipments.any? && self.shipments.all? { |s| s.status == "shipped" }
+        elsif line_items.select { |li| li.line_item_type == "shipment" }.any? && line_items.select { |li| li.line_item_type == "shipment" }.all? { |s| s.shipment.status == "shipped" }
           self.status = "shipped"
-        elsif self.shipments.any? && self.shipments.all? { |s| s.status == "processing" }
+        elsif line_items.select { |li| li.line_item_type == "shipment" }.any? && line_items.select { |li| li.line_item_type == "shipment" }.all? { |s| s.shipment.status == "processing" }
           self.status = "processing"
         else
           self.status = "new"

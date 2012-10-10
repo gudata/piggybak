@@ -2,6 +2,7 @@
 N/A
 <% else -%>
 <table cellpadding="5" cellspacing="0">
+<% if false -%>
 	<tr>
 		<td width="150">Subtotal</td>
 		<td>$<%= "%.2f" % form.object.line_items.inject(0) { |subtotal, li| subtotal + li.total } %></td>
@@ -15,16 +16,17 @@ N/A
 		<td>$<%= "%.2f" % form.object.tax_charge %></td>
 	</tr>
 	<tr>
-		<td>Total</td>
-		<td>$<%= "%.2f" % form.object.total %></td>
-	</tr>
-	<tr>
 		<td>Payments</td>
 		<td>$<%= "%.2f" % form.object.payments.inject(0) { |total, payment| total + payment.total } %></td>
 	</tr>
 	<tr>
 		<td>Adjustments</td>
 		<td>$<%= "%.2f" % form.object.adjustments.inject(0) { |total, adj| total + adj.total.to_f } %></td>
+	</tr>
+<% end -%>
+	<tr>
+		<td>Total</td>
+		<td>$<%= "%.2f" % form.object.total %></td>
 	</tr>
 	<tr>
 		<td>Balance Due</td>
