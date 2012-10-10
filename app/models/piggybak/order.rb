@@ -22,7 +22,7 @@ module Piggybak
     after_initialize :initialize_defaults
     before_validation :prepare_for_destruction
     after_validation :update_totals
-    before_save :process_payments, :update_status, :set_new_record
+    before_save :postprocess_line_items, :update_status, :set_new_record
     after_save :record_order_note
 
     default_scope :order => 'created_at DESC'
@@ -54,17 +54,17 @@ module Piggybak
       end
     end
 
-    def process_payments
+    def postprocess_line_items
       has_errors = false
 
-      self.line_items.select { |li| li.line_item_type == "payment" }.each do |line_item|
-        if line_item.payment.process(self)
-          line_item.price = self.total_due
-          self.total_due = 0
-        else
-          return false
+      self.line_items.each do |line_item|
+        method = "postprocess_#{line_item.line_item_type}"
+        if line_item.respond_to?(method)
+          if !line_item.call(method)
+            return false
+          end
         end
-      end 
+      end
 
       true
     end

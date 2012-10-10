@@ -27,41 +27,59 @@ module Piggybak
 
     has_one :shipment #, :conditions => "reference_type = 'shipment'"
     accepts_nested_attributes_for :shipment
+    
+    has_one :sellable #, :conditions => "reference_type = 'sellable'"
+    #accepts_nested_attributes_for :sellable
 
-    before_validation :clear_nonreferenced
+    before_validation :preprocess
 
-    def clear_nonreferenced
-      if self.line_item_type == 'sellable'
-        self.reference_type = "Piggybak::Sellable"
-        self.payment = self.shipment = nil
-        self.description = self.reference.description
-        self.unit_price = self.reference.price
-        self.price = self.unit_price*self.quantity.to_i 
-      end 
-      if self.line_item_type == 'shipment'
-        self.reference_type = "Piggybak::Shipment"
-        self.payment = nil
+    def preprocess
+      method = "preprocess_#{self.line_item_type}"
+      self.send(method) if self.respond_to?(method)
 
-        if !self._destroy
-          if (self.new_record? || self.shipment.status != 'shipped') && self.shipment.shipping_method
-            calculator = self.shipment.shipping_method.klass.constantize
-            self.price = calculator.rate(self.shipment.shipping_method, self)
-            self.price = ((self.price*100).to_i).to_f/100
-            self.description = self.shipment.shipping_method.description
-            self.quantity = 1
+      Piggybak.config.line_item_types.each do |k, v|
+        if v.has_key?(:reference_type)
+          if k.to_s == self.line_item_type
+            self.reference_type = v[:reference_type]
+          else
+            self.send("#{k}=", nil)
           end
         end
       end
-      if self.line_item_type == "payment"
-        self.reference_type = "Piggybak::Payment"
-        self.shipment = nil
+    end
 
-        self.description = "Payment"
-        self.quantity = 1
-        self.price = 0
+    def preprocess_sellable
+      self.description = self.reference.description
+      self.unit_price = self.reference.price
+      self.price = self.unit_price*self.quantity.to_i 
+    end
+
+    def preprocess_shipment 
+      if !self._destroy
+        if (self.new_record? || self.shipment.status != 'shipped') && self.shipment.shipping_method
+          calculator = self.shipment.shipping_method.klass.constantize
+          self.price = calculator.rate(self.shipment.shipping_method, self)
+          self.price = ((self.price*100).to_i).to_f/100
+          self.description = self.shipment.shipping_method.description
+          self.quantity = 1
+        end
       end
+    end
 
-      true 
+    def preprocess_payment
+      self.description = "Payment" # TODO: Update with more description??
+      self.quantity = 1
+      self.price = 0
+    end
+
+    def postprocess_payment
+      if self.payment.process(self.order)
+        self.price = self.order.total_due
+        self.order.total_due = 0
+        return true
+      else
+        return false
+      end
     end
 
     def admin_label

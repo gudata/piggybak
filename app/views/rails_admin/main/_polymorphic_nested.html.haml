@@ -1,24 +1,17 @@
 - if form.object.new_record?
-  = form.select "line_item_type", Piggybak.config.line_item_types.select { |b| b != 'tax' }, {}, :onchange => "blah($(this));"
+  = form.select "line_item_type", Piggybak.config.line_item_types.select { |k, v| v[:visible] }.keys, {}, :onchange => "toggle_line_item($(this));"
 - else
   = form.hidden_field "line_item_type"
   = form.object.line_item_type
 
 %script
-  var blah = function(el) {
+  var line_item_types=#{raw Piggybak.config.line_item_types.to_json};
+  var toggle_line_item = function(el) {
   el.parent().parent().siblings('div').hide();
-  //TODO: Move following lines to CSS?
-  //el.parent().parent().siblings('div').find('> .control-label').hide();
-  //el.parent().parent().siblings('div').find('.toggler').parent().hide();
-  if(!el.parent().parent().siblings('.' + el.val() + '_field').hasClass('has_one_association_type')) {
-  if(el.val() == 'sellable') {
-  el.parent().parent().siblings('.quantity_field').show();
-  } else {
-  el.parent().parent().siblings('.price_field, .quantity_field, .description_field').show();
-  }
-  }
-  el.parent().parent().siblings('.' + el.val() + '_field').show();
+  $.each(line_item_types[el.val()].fields, function(a, b) {
+  el.parent().parent().siblings('.' + b + '_field').show();
+  });
   };
   $.each($('.line_item_type_field select,.line_item_type_field input'), function(i, el) {
-  blah($(el));
+  toggle_line_item($(el));
   });
