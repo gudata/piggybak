@@ -10,8 +10,8 @@ class Piggybak::Sellable < ActiveRecord::Base
   validates_presence_of :item_type
   validates_numericality_of :quantity, :only_integer => true, :greater_than_or_equal_to => 0
 
-  has_one :line_item, :as => "reference", :class_name => "::Piggybak::LineItem"
-    
+  has_many :line_items, :as => :reference, :inverse_of => :reference
+
   def admin_label
     "Sellable: #{self.description}"
   end

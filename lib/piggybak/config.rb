@@ -24,9 +24,9 @@ module Piggybak
                                  "::Piggybak::ShippingCalculator::Range"]
         @tax_calculators = ["::Piggybak::TaxCalculator::Percent"]
 
-        @line_item_types = {:sellable => { :visible => true, :reference_type => "Piggybak::Sellable", :fields => ["sellable_select", "quantity"] },
-                            :payment => { :visible => true, :reference_type => "Piggybak::Payment", :fields => ["payment"] },
-                            :shipment => { :visible => true, :reference_type => "Piggybak::Shipment", :fields => ["shipment"] },
+        @line_item_types = {:sellable => { :visible => true, :fields => ["sellable_id", "quantity"] },
+                            :payment => { :visible => true, :nested_attrs => true, :fields => ["payment"] },
+                            :shipment => { :visible => true, :nested_attrs => true, :fields => ["shipment"] },
                             :adjustment => { :visible => true, :fields => ["description", "price"] },
                             :tax => { :visible => false }}
 

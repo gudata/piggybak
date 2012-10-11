@@ -47,6 +47,7 @@ module Piggybak
             end
           end
         rescue Exception => e
+Rails.logger.warn "stephie: #{e.inspect}"
           if Piggybak.config.logging
             logger.warn "#{request.remote_ip}:#{Time.now.strftime("%Y-%m-%d %H:%M")} Order exception: #{e.inspect}"
           end

@@ -218,7 +218,7 @@ module Piggybak
             field :shipment do
               active true
             end
-            field :sellable_select, :enum do
+            field :sellable_id, :enum do
               label "Sellable"
               help "Required"
             end

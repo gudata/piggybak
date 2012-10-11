@@ -83,7 +83,7 @@ module Piggybak
       shipment_line_item = self.line_items.detect { |li| li.line_item_type == "shipment" }
 
       if shipment_line_item.nil?
-        new_shipment_line_item = Piggybak::LineItem.new({ :line_item_type => "shipment", :quantity => 1, :reference_type => "Piggybak::Shipment" })
+        new_shipment_line_item = Piggybak::LineItem.new({ :line_item_type => "shipment", :quantity => 1 })
         new_shipment_line_item.build_shipment
         self.line_items << new_shipment_line_item
       elsif shipment_line_item.shipment.nil?
@@ -95,7 +95,7 @@ module Piggybak
       end
 
       if !self.line_items.detect { |li| li.line_item_type == "payment" }
-        payment_line_item = Piggybak::LineItem.new({ :line_item_type => "payment", :quantity => 1, :reference_type => "Piggybak::Payment" })
+        payment_line_item = Piggybak::LineItem.new({ :line_item_type => "payment", :quantity => 1 })
         payment_line_item.build_payment 
         self.line_items << payment_line_item
       end
@@ -105,8 +105,7 @@ module Piggybak
       cart.update_quantities
 
       cart.items.each do |item|
-        self.line_items << Piggybak::LineItem.new({ :reference_id => item[:sellable].id,
-          :reference_type => "Piggybak::Sellable",
+        self.line_items << Piggybak::LineItem.new({ :sellable_id => item[:sellable].id,
           :unit_price => item[:sellable].price,
           :price => item[:sellable].price*item[:quantity],
           :description => item[:sellable].description,
@@ -162,8 +161,10 @@ module Piggybak
         end
       end
     end
+
     def set_new_record
       self.was_new_record = self.new_record?
+      true
     end
 
     def status_enum

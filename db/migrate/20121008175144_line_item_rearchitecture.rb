@@ -1,11 +1,9 @@
 class LineItemRearchitecture < ActiveRecord::Migration
   def up
     add_column :line_items, :line_item_type, :string, :null => false, :default => "sellable"
-    add_column :line_items, :reference_type, :string, :default => "Piggybak::Sellable"
     rename_column :line_items, :price, :unit_price
     rename_column :line_items, :total, :price
-    rename_column :line_items, :sellable_id, :reference_id
-    change_column :line_items, :reference_id, :integer, :null => true
+    change_column :line_items, :sellable_id, :integer, :null => true
     add_column :line_items, :sort, :integer, :null => false, :default => 0
     change_table(:line_items) do |t|
       t.timestamps
@@ -17,21 +15,14 @@ class LineItemRearchitecture < ActiveRecord::Migration
     [Piggybak::Shipment, Piggybak::Payment, Piggybak::Adjustment].each do |klass|
       klass.all.each do |item|
         description = ''
-        reference_id = reference_type = nil
         if klass == Piggybak::Shipment
-          reference_id = item.id
-          reference_type = klass.to_s
           description = item.shipping_method.description
         elsif klass == Piggybak::Payment
-          reference_id = item.id
-          reference_type = klass.to_s
           description = "Payment"
         elsif klass == Piggybak::Adjustment
           description = item.note || "Adjustment"
         end
         li = Piggybak::LineItem.new({ :line_item_type => klass.to_s.demodulize.downcase,
-          :reference_id => reference_id,
-          :reference_type => reference_type,
           :price => 0.00,
           :description => description,
           :quantity => 1, 
@@ -68,10 +59,8 @@ class LineItemRearchitecture < ActiveRecord::Migration
     remove_column :line_items, :updated_at
     remove_column :line_items, :created_at
     remove_column :line_items, :sort
-    remove_column :line_items, :reference_type
     rename_column :line_items, :price, :total
     rename_column :line_items, :unit_price, :price
-    rename_column :line_items, :reference_id, :sellable_id
 
     # Populate shipping, payments, adjusments, tax charge with values
     # Delete line items for shipment, payment, adjustment, tax
