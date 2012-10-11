@@ -37,24 +37,22 @@ module Piggybak
     end
 
     def process(order)
+      return true if !self.new_record?
+
       ActiveMerchant::Billing::Base.mode = Piggybak.config.activemerchant_mode
 
-      if self.new_record?
-        payment_gateway = self.payment_method.klass.constantize
-        gateway = payment_gateway::KLASS.new(self.payment_method.key_values)
-        p_credit_card = ActiveMerchant::Billing::CreditCard.new(self.credit_card)
-        gateway_response = gateway.authorize(order.total_due*100, p_credit_card, :address => order.avs_address)
-        if gateway_response.success?
-          self.attributes = { :transaction_id => payment_gateway.transaction_id(gateway_response),
-                              :masked_number => self.number.mask_cc_number }
-          gateway.capture(order.total_due*100, gateway_response.authorization, { :credit_card => p_credit_card } )
-          return true
-  	    else
-  	      self.errors.add :payment_method_id, gateway_response.message
-          return false
-  	    end
-      else
+      payment_gateway = self.payment_method.klass.constantize
+      gateway = payment_gateway::KLASS.new(self.payment_method.key_values)
+      p_credit_card = ActiveMerchant::Billing::CreditCard.new(self.credit_card)
+      gateway_response = gateway.authorize(order.total_due*100, p_credit_card, :address => order.avs_address)
+      if gateway_response.success?
+        self.attributes = { :transaction_id => payment_gateway.transaction_id(gateway_response),
+                            :masked_number => self.number.mask_cc_number }
+        gateway.capture(order.total_due*100, gateway_response.authorization, { :credit_card => p_credit_card } )
         return true
+      else
+        self.errors.add :payment_method_id, gateway_response.message
+        return false
       end
     end
 
@@ -79,8 +77,8 @@ module Piggybak
 
     validates_each :payment_method_id do |record, attr, value|
       if record.new_record?
-  	    credit_card = ActiveMerchant::Billing::CreditCard.new(record.credit_card)
-  	 
+        credit_card = ActiveMerchant::Billing::CreditCard.new(record.credit_card)
+     
         if !credit_card.valid?
           credit_card.errors.each do |key, value|
             if value.any? && !["first_name", "last_name", "type"].include?(key)

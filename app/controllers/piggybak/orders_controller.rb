@@ -5,7 +5,6 @@ module Piggybak
       @cart = Piggybak::Cart.new(request.cookies["cart"])
 
       if request.post?
-Rails.logger.warn "stephie: #{params.inspect}"
         logger = Logger.new("#{Rails.root}/#{Piggybak.config.logging_file}")
 
         begin
@@ -29,10 +28,8 @@ Rails.logger.warn "stephie: #{params.inspect}"
               logger.info "#{request.remote_ip}:#{Time.now.strftime("%Y-%m-%d %H:%M")} Order contains: #{cookies["cart"]} for user #{current_user ? current_user.email : 'guest'}"
             end
 
-Rails.logger.warn "stephie pre save"
             if @order.save
               # TODO: Imporant: figure out how to have notifications not trigger rollback here. Instead log failed order notification sent.
-Rails.logger.warn "stephie after save"
               Piggybak::Notifier.order_notification(@order).deliver
 
               if Piggybak.config.logging
@@ -43,7 +40,6 @@ Rails.logger.warn "stephie after save"
               session[:last_order] = @order.id
               redirect_to piggybak.receipt_url 
             else
-Rails.logger.warn "stephie here: #{@order.errors.full_messages.inspect}"
               if Piggybak.config.logging
                 logger.warn "#{request.remote_ip}:#{Time.now.strftime("%Y-%m-%d %H:%M")} Order failed to save #{@order.errors.full_messages} with #{@order.inspect}."
               end
@@ -51,7 +47,6 @@ Rails.logger.warn "stephie here: #{@order.errors.full_messages.inspect}"
             end
           end
         rescue Exception => e
-Rails.logger.warn "stephie here: #{e.inspect}"
           if Piggybak.config.logging
             logger.warn "#{request.remote_ip}:#{Time.now.strftime("%Y-%m-%d %H:%M")} Order exception: #{e.inspect}"
           end

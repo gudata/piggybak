@@ -161,11 +161,9 @@ module Piggybak
           self.status = "new"
         end
       end
-Rails.logger.warn "stephie end of update status"
     end
     def set_new_record
       self.was_new_record = self.new_record?
-Rails.logger.warn "stephie end of set new record"
     end
 
     def status_enum

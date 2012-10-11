@@ -131,10 +131,12 @@ module Piggybak
             field :user_agent do
               read_only true
             end
-            field :billing_address do 
-             help "Required"
+            field :billing_address do
+              active true
+              help "Required"
             end
             field :shipping_address do
+              active true
               help "Required"
             end
             field :line_items do
@@ -218,6 +220,7 @@ module Piggybak
             end
             field :sellable_select, :enum do
               label "Sellable"
+              help "Required"
             end
             field :price do
               visible do

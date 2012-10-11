@@ -34,6 +34,7 @@ module Piggybak
 
     before_validation :preprocess
     after_initialize :initialize_line_item
+    after_save :clean_reference
 
     def initialize_line_item
       method = "initialize_#{self.line_item_type}"
@@ -46,13 +47,19 @@ module Piggybak
       end
     end
 
+    def clean_reference
+      if self.line_item_type == "payment" && self.payment && self.reference_id.nil?
+        self.update_attribute(:reference_id, self.payment.id)
+      end
+    end
+
     def preprocess
       Piggybak.config.line_item_types.each do |k, v|
         if v.has_key?(:reference_type)
           if k == self.line_item_type.to_sym
             self.reference_type = v[:reference_type]
           else
-            self.send("#{k}=", nil)
+            self.send("#{k}=", nil) #if k != :sellable
           end
         end
       end
@@ -71,16 +78,16 @@ module Piggybak
       self.price = self.unit_price*self.quantity.to_i 
     end
 
-    def preprocess_shipment 
+    def preprocess_shipment
       if !self._destroy
-        if (self.new_record? || self.shipment.status != 'shipped') && self.shipment.shipping_method
+        if (self.new_record? || self.shipment.status != 'shipped') && self.shipment && self.shipment.shipping_method
           calculator = self.shipment.shipping_method.klass.constantize
           self.price = calculator.rate(self.shipment.shipping_method, self)
           self.price = ((self.price*100).to_i).to_f/100
           self.description = self.shipment.shipping_method.description
           self.quantity = 1
         end
-        if self.shipment.shipping_method.nil?
+        if self.shipment.nil? || self.shipment.shipping_method.nil?
           self.price = 0.00
           self.quantity = 1
           self.description = "Shipping"
@@ -89,15 +96,19 @@ module Piggybak
     end
 
     def preprocess_payment
-      self.payment.payment_method_id ||= Piggybak::PaymentMethod.find_by_active(true).id
-      self.description = "Payment"
-      self.quantity = 1
-      self.price = 0
+      if self.new_record?
+        self.payment.payment_method_id ||= Piggybak::PaymentMethod.find_by_active(true).id if self.payment
+        self.description = "Payment"
+        self.quantity = 1
+        self.price = 0
+      end
     end
 
     def postprocess_payment
+      return true if !self.new_record?
+
       if self.payment.process(self.order)
-        self.price = self.order.total_due
+        self.price = -1*self.order.total_due
         self.order.total_due = 0
         return true
       else
