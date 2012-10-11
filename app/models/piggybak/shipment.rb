@@ -1,7 +1,6 @@
 module Piggybak
   class Shipment < ActiveRecord::Base
     belongs_to :order
-    acts_as_changer
     belongs_to :shipping_method
     belongs_to :line_item
 

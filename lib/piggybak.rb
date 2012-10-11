@@ -216,9 +216,8 @@ module Piggybak
             field :shipment do
               active true
             end
-            field :sellable do
+            field :sellable_select, :enum do
               label "Sellable"
-              partial "sellable"
             end
             field :price do
               visible do

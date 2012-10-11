@@ -5,16 +5,18 @@ module Piggybak
       @cart = Piggybak::Cart.new(request.cookies["cart"])
 
       if request.post?
+Rails.logger.warn "stephie: #{params.inspect}"
         logger = Logger.new("#{Rails.root}/#{Piggybak.config.logging_file}")
 
         begin
           ActiveRecord::Base.transaction do
             @order = Piggybak::Order.new(params[:piggybak_order])
+            @order.create_payment_shipment
 
             if Piggybak.config.logging
               clean_params = params[:piggybak_order].clone
-              clean_params["payments_attributes"]["0"]["number"] = clean_params["payments_attributes"]["0"]["number"].mask_cc_number
-              clean_params["payments_attributes"]["0"]["verification_value"] = clean_params["payments_attributes"]["0"]["verification_value"].mask_csv
+              #clean_params["payments_attributes"]["0"]["number"] = clean_params["payments_attributes"]["0"]["number"].mask_cc_number
+              #clean_params["payments_attributes"]["0"]["verification_value"] = clean_params["payments_attributes"]["0"]["verification_value"].mask_csv
               logger.info "#{request.remote_ip}:#{Time.now.strftime("%Y-%m-%d %H:%M")} Order received with params #{clean_params.inspect}" 
             end
             @order.initialize_user(current_user, true)
@@ -27,8 +29,10 @@ module Piggybak
               logger.info "#{request.remote_ip}:#{Time.now.strftime("%Y-%m-%d %H:%M")} Order contains: #{cookies["cart"]} for user #{current_user ? current_user.email : 'guest'}"
             end
 
+Rails.logger.warn "stephie pre save"
             if @order.save
               # TODO: Imporant: figure out how to have notifications not trigger rollback here. Instead log failed order notification sent.
+Rails.logger.warn "stephie after save"
               Piggybak::Notifier.order_notification(@order).deliver
 
               if Piggybak.config.logging
@@ -39,6 +43,7 @@ module Piggybak
               session[:last_order] = @order.id
               redirect_to piggybak.receipt_url 
             else
+Rails.logger.warn "stephie here: #{@order.errors.full_messages.inspect}"
               if Piggybak.config.logging
                 logger.warn "#{request.remote_ip}:#{Time.now.strftime("%Y-%m-%d %H:%M")} Order failed to save #{@order.errors.full_messages} with #{@order.inspect}."
               end
@@ -46,6 +51,7 @@ module Piggybak
             end
           end
         rescue Exception => e
+Rails.logger.warn "stephie here: #{e.inspect}"
           if Piggybak.config.logging
             logger.warn "#{request.remote_ip}:#{Time.now.strftime("%Y-%m-%d %H:%M")} Order exception: #{e.inspect}"
           end
@@ -53,8 +59,9 @@ module Piggybak
             @order.errors[:base] << "Your order could not go through. Please try again."
           end
         end
-	  else
+      else
         @order = Piggybak::Order.new
+        @order.create_payment_shipment
         @order.initialize_user(current_user, false)
       end
     end

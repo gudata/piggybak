@@ -3,7 +3,6 @@ module Piggybak
     belongs_to :order
     belongs_to :source, :polymorphic => true
     attr_accessor :user_id
-    acts_as_changer
     belongs_to :line_item
 
     validates_presence_of :source

@@ -13,9 +13,9 @@ module Piggybak
     scope :shipments, where(:line_item_type => 'shipment')
     scope :payments, where(:line_item_type => 'payment')
 
-    #after_create :decrease_inventory, :if => Proc.new { |line_item| line_item.line_item_type == 'sellable' && !line_item.reference.unlimited_inventory }
-    #after_destroy :increase_inventory, :if => Proc.new { |line_item| line_item.line_item_type == 'sellable' && !line_item.reference.unlimited_inventory }
-    #after_update :update_inventory, :if => Proc.new { |line_item| line_item.line_item_type == 'sellable' && !line_item.reference.unlimited_inventory }
+    after_create :decrease_inventory, :if => Proc.new { |line_item| line_item.line_item_type == 'sellable' && !line_item.reference.unlimited_inventory }
+    after_destroy :increase_inventory, :if => Proc.new { |line_item| line_item.line_item_type == 'sellable' && !line_item.reference.unlimited_inventory }
+    after_update :update_inventory, :if => Proc.new { |line_item| line_item.line_item_type == 'sellable' && !line_item.reference.unlimited_inventory }
 
     attr_accessible :sellable_id, :price, :unit_price, :description, :quantity,
                     :payments_attributes, :shipments_attributes
@@ -29,26 +29,43 @@ module Piggybak
     accepts_nested_attributes_for :shipment
     
     has_one :sellable #, :conditions => "reference_type = 'sellable'"
-    #accepts_nested_attributes_for :sellable
+
+    attr_accessor :sellable_select
 
     before_validation :preprocess
+    after_initialize :initialize_line_item
+
+    def initialize_line_item
+      method = "initialize_#{self.line_item_type}"
+      self.send(method) if self.respond_to?(method)
+    end
+
+    def initialize_sellable
+      if !self.new_record?
+        self.sellable_select = self.reference_id
+      end
+    end
 
     def preprocess
-      method = "preprocess_#{self.line_item_type}"
-      self.send(method) if self.respond_to?(method)
-
       Piggybak.config.line_item_types.each do |k, v|
         if v.has_key?(:reference_type)
-          if k.to_s == self.line_item_type
+          if k == self.line_item_type.to_sym
             self.reference_type = v[:reference_type]
           else
             self.send("#{k}=", nil)
           end
         end
       end
+
+      method = "preprocess_#{self.line_item_type}"
+      self.send(method) if self.respond_to?(method)
     end
 
     def preprocess_sellable
+      self.reference_id = self.sellable_select if self.sellable_select
+      return if self.reference.nil?
+      # Add error on sellable?
+
       self.description = self.reference.description
       self.unit_price = self.reference.price
       self.price = self.unit_price*self.quantity.to_i 
@@ -63,11 +80,17 @@ module Piggybak
           self.description = self.shipment.shipping_method.description
           self.quantity = 1
         end
+        if self.shipment.shipping_method.nil?
+          self.price = 0.00
+          self.quantity = 1
+          self.description = "Shipping"
+        end
       end
     end
 
     def preprocess_payment
-      self.description = "Payment" # TODO: Update with more description??
+      self.payment.payment_method_id ||= Piggybak::PaymentMethod.find_by_active(true).id
+      self.description = "Payment"
       self.quantity = 1
       self.price = 0
     end
@@ -82,11 +105,15 @@ module Piggybak
       end
     end
 
+    def sellable_select_enum
+      ::Piggybak::Sellable.all.collect { |s| ["#{s.description}: $#{s.price}", s.id ] }
+    end
+
     def admin_label
       if self.line_item_type == 'sellable'
-        "#{self.quantity} x #{self.description} ($#{sprintf("%.2f", self.unit_price)}): $#{sprintf("%.2f", self.price)}"
+        "#{self.quantity} x #{self.description} ($#{sprintf("%.2f", self.unit_price)}): $#{sprintf("%.2f", self.price)}".gsub('"', '&quot;')
       else
-        "#{self.description}: $#{sprintf("%.2f", self.price)}"
+        "#{self.description}: $#{sprintf("%.2f", self.price)}".gsub('"', '&quot;')
       end
     end
 

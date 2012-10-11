@@ -6,6 +6,7 @@
 
 %script
   var line_item_types=#{raw Piggybak.config.line_item_types.to_json};
+  console.log(line_item_types);
   var toggle_line_item = function(el) {
   el.parent().parent().siblings('div').hide();
   $.each(line_item_types[el.val()].fields, function(a, b) {

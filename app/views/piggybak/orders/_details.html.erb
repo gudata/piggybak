@@ -5,12 +5,12 @@
 		<th>Quantity</th>
 		<th>Subtotal</th>
 	</tr>
-	<% order.line_items.each do |line_item| %>
+	<% order.line_items.sellables.each do |line_item| %>
 	<tr>
 		<td><%= line_item.description %></td>
-		<td><%= number_to_currency line_item.price %></td>
+		<td><%= number_to_currency line_item.unit_price %></td>
 		<td><%= line_item.quantity %></td>
-		<td><%= number_to_currency line_item.total %></td>
+		<td><%= number_to_currency line_item.price %></td>
 	</tr>
 	<% end -%>
 	<tr>
@@ -19,7 +19,7 @@
 	<tr>
 		<td colspan="2"></td>
 		<td>Subtotal</td>
-		<td><%= number_to_currency order.line_items.inject(0) { |subtotal, li| subtotal + li.total } %></td>
+		<td><%= number_to_currency order.line_items.sellables.inject(0) { |subtotal, li| subtotal + li.price } %></td>
 	</tr>
 	<tr>
 		<td colspan="2"></td>
@@ -29,7 +29,7 @@
 	<tr>
 		<td colspan="2"></td>
 		<td>Shipping</td>
-		<td><%= number_to_currency order.shipments.inject(0) { |shipping, shipment| shipping + shipment.total } %></td>
+		<td><%= number_to_currency order.shipping_charge %></td>
 	</tr>
 	<tr>
 		<td colspan="2"></td>

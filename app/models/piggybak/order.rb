@@ -60,7 +60,7 @@ module Piggybak
       self.line_items.each do |line_item|
         method = "postprocess_#{line_item.line_item_type}"
         if line_item.respond_to?(method)
-          if !line_item.call(method)
+          if !line_item.send(method)
             return false
           end
         end
@@ -79,35 +79,39 @@ module Piggybak
       end
     end
 
+    def create_payment_shipment
+      shipment_line_item = self.line_items.detect { |li| li.line_item_type == "shipment" }
+
+      if shipment_line_item.nil?
+        new_shipment_line_item = Piggybak::LineItem.new({ :line_item_type => "shipment", :quantity => 1, :reference_type => "Piggybak::Shipment" })
+        new_shipment_line_item.build_shipment
+        self.line_items << new_shipment_line_item
+      elsif shipment_line_item.shipment.nil?
+        shipment_line_item.build_shipment
+      else
+        previous_method = shipment_line_item.shipment.shipping_method_id
+        shipment_line_item.build_shipment
+        shipment_line_item.shipment.shipping_method_id = previous_method
+      end
+
+      if !self.line_items.detect { |li| li.line_item_type == "payment" }
+        payment_line_item = Piggybak::LineItem.new({ :line_item_type => "payment", :quantity => 1, :reference_type => "Piggybak::Payment" })
+        payment_line_item.build_payment 
+        self.line_items << payment_line_item
+      end
+    end
+
     def add_line_items(cart)
       cart.update_quantities
+
       cart.items.each do |item|
-        line_item = Piggybak::LineItem.new({ :reference_id => item[:sellable].id,
-          :reference_type => "Sellable",
+        self.line_items << Piggybak::LineItem.new({ :reference_id => item[:sellable].id,
+          :reference_type => "Piggybak::Sellable",
           :unit_price => item[:sellable].price,
           :price => item[:sellable].price*item[:quantity],
           :description => item[:sellable].description,
           :quantity => item[:quantity] })
-        self.line_items << line_item
       end
-    end
-
-    def set_defaults
-      #return if self.to_be_cancelled
-
-=begin
-      self.line_items.each do |line_item|
-        if self.status != "shipped"
-          line_item.description = line_item.sellable.description
-          line_item.price = line_item.sellable.price
-        end
-        if line_item.sellable
-          line_item.total = line_item.price * line_item.quantity.to_i
-        else
-          line_item.total = 0
-        end
-      end
-=end
     end
 
     def prepare_for_destruction
@@ -121,7 +125,6 @@ module Piggybak
     def update_totals
       self.total = 0
       self.total_due = 0
-Rails.logger.warn "stephie: #{self.errors.inspect}"
 
       if self.line_items.taxes.any?
         self.line_items.taxes.each do |line_item|
@@ -158,11 +161,11 @@ Rails.logger.warn "stephie: #{self.errors.inspect}"
           self.status = "new"
         end
       end
+Rails.logger.warn "stephie end of update status"
     end
     def set_new_record
       self.was_new_record = self.new_record?
-
-      true
+Rails.logger.warn "stephie end of set new record"
     end
 
     def status_enum
@@ -194,6 +197,14 @@ Rails.logger.warn "stephie: #{self.errors.inspect}"
       end
 
       v
+    end
+
+    def tax_charge
+      self.line_items.taxes.inject(0) { |subtotal, li| subtotal + li.price }
+    end
+
+    def shipping_charge
+      self.line_items.shipments.inject(0) { |subtotal, li| subtotal + li.price }
     end
   end
 end
