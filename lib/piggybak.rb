@@ -222,11 +222,7 @@ module Piggybak
               label "Sellable"
               help "Required"
             end
-            field :price do
-              visible do
-                bindings[:object].new_record?
-              end
-            end
+            field :price 
             field :quantity
             field :description  
           end

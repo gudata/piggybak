@@ -28,7 +28,13 @@ module Piggybak
 
     belongs_to :sellable    
 
+    after_initialize :initialize_line_item
     before_validation :preprocess
+
+    def initialize_line_item
+      self.quantity ||= 1
+      self.price ||= 0
+    end
 
     def preprocess
       Piggybak.config.line_item_types.each do |k, v|
@@ -58,11 +64,9 @@ module Piggybak
           self.price = calculator.rate(self.shipment.shipping_method, self)
           self.price = ((self.price*100).to_i).to_f/100
           self.description = self.shipment.shipping_method.description
-          self.quantity = 1
         end
         if self.shipment.nil? || self.shipment.shipping_method.nil?
           self.price = 0.00
-          self.quantity = 1
           self.description = "Shipping"
         end
       end
@@ -72,13 +76,8 @@ module Piggybak
       if self.new_record?
         self.payment.payment_method_id ||= Piggybak::PaymentMethod.find_by_active(true).id if self.payment
         self.description = "Payment"
-        self.quantity = 1
         self.price = 0
       end
-    end
-
-    def preprocess_adjustment
-      self.quantity = 1
     end
 
     def postprocess_payment

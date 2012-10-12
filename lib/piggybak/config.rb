@@ -24,11 +24,11 @@ module Piggybak
                                  "::Piggybak::ShippingCalculator::Range"]
         @tax_calculators = ["::Piggybak::TaxCalculator::Percent"]
 
-        @line_item_types = {:sellable => { :visible => true, :fields => ["sellable_id", "quantity"] },
-                            :payment => { :visible => true, :nested_attrs => true, :fields => ["payment"] },
-                            :shipment => { :visible => true, :nested_attrs => true, :fields => ["shipment"] },
-                            :adjustment => { :visible => true, :fields => ["description", "price"] },
-                            :tax => { :visible => false }}
+        @line_item_types = {:sellable => { :visible => true, :fields => ["sellable_id", "quantity"], :allow_destroy => true },
+                            :payment => { :visible => true, :nested_attrs => true, :fields => ["payment"], :allow_destroy => false },
+                            :shipment => { :visible => true, :nested_attrs => true, :fields => ["shipment"], :allow_destroy => true },
+                            :adjustment => { :visible => true, :fields => ["description", "price"], :allow_destroy => true },
+                            :tax => { :visible => false, :allow_destroy => false }}
 
         @default_country = "US"
 

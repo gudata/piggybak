@@ -83,7 +83,7 @@ module Piggybak
       shipment_line_item = self.line_items.detect { |li| li.line_item_type == "shipment" }
 
       if shipment_line_item.nil?
-        new_shipment_line_item = Piggybak::LineItem.new({ :line_item_type => "shipment", :quantity => 1 })
+        new_shipment_line_item = Piggybak::LineItem.new({ :line_item_type => "shipment" })
         new_shipment_line_item.build_shipment
         self.line_items << new_shipment_line_item
       elsif shipment_line_item.shipment.nil?
@@ -95,7 +95,7 @@ module Piggybak
       end
 
       if !self.line_items.detect { |li| li.line_item_type == "payment" }
-        payment_line_item = Piggybak::LineItem.new({ :line_item_type => "payment", :quantity => 1 })
+        payment_line_item = Piggybak::LineItem.new({ :line_item_type => "payment" })
         payment_line_item.build_payment 
         self.line_items << payment_line_item
       end
@@ -125,23 +125,29 @@ module Piggybak
       self.total = 0
       self.total_due = 0
 
-      if self.line_items.taxes.any?
-        self.line_items.taxes.each do |line_item|
-          line_item.destroy
-        end
-      end
-
+      # Recalculate and create line item for tax
+      # If a tax line item already exists, reset price
+      # If a tax line item doesn't, create
+      # If tax is 0, destroy tax line item
       tax = TaxMethod.calculate_tax(self)
+      tax_line_item = self.line_items.detect { |line_item| line_item.line_item_type == "tax" }
       if tax > 0
-        LineItem.create({ :order_id => self.id, :quantity => 1, :description => "Tax Charge", :price => tax })
+        if tax_line_item
+          tax_line_item.price = tax
+        else
+          self.line_items << LineItem.new({ :line_item_type => "tax", :description => "Tax Charge", :price => tax })
+        end
+      elsif tax_line_item
+        tax_line_item.mark_for_destruction
       end
 
+      # Calculating total and total due 
       self.line_items.each do |line_item|
         if !line_item._destroy
-          self.total += line_item.price if line_item.price.to_f > 0
-          self.total_due += line_item.price.to_f
+          self.total += line_item.price
         end
       end
+      self.total_due += self.total
     end
 
     def update_status
@@ -188,10 +194,9 @@ module Piggybak
     def subtotal
       v = 0
 
-      # change to view line_items.sellables
-      self.line_items.each do |line_item|
+      self.line_items.select { |li| li.line_item_type == "sellable" }.each do |line_item|
         if !line_item._destroy
-          v += line_item.total 
+          v += line_item.price
         end
       end
 
