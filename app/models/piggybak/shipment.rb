@@ -7,17 +7,10 @@ module Piggybak
     validates_presence_of :status
     validates_presence_of :shipping_method_id
     
-    attr_accessible :shipping_method_id
+    attr_accessible :shipping_method_id, :status
     
     def status_enum
       ["new", "processing", "shipped"]
-    end
-
-    def admin_label
-      "Shipment ##{self.id}<br />" +
-      "#{self.shipping_method.description}<br />" +
-      "Status: #{self.status}<br />" #+
-      #"$#{"%.2f" % self.total}" reference line item total here instead
     end
   end
 end

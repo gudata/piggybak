@@ -12,10 +12,8 @@ module Piggybak
     accepts_nested_attributes_for :line_items, :allow_destroy => true
     accepts_nested_attributes_for :order_notes
 
-    attr_accessor :recorded_changes
-    attr_accessor :recorded_changer
-    attr_accessor :was_new_record
-    attr_accessor :disable_order_notes
+    attr_accessor :recorded_changes, :recorded_changer,
+                  :was_new_record, :disable_order_notes 
 
     validates_presence_of :status, :email, :phone, :total, :total_due, :created_at, :ip_address, :user_agent
 
@@ -27,8 +25,9 @@ module Piggybak
 
     default_scope :order => 'created_at DESC'
 
-    attr_accessible :email, :phone, :billing_address_attributes, 
-                    :shipping_address_attributes, :line_items_attributes
+    attr_accessible :user_id, :email, :phone, :billing_address_attributes, 
+                    :shipping_address_attributes, :line_items_attributes,
+                    :order_notes_attributes, :details, :recorded_changer
                     
     def initialize_defaults
       self.recorded_changes ||= []

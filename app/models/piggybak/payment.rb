@@ -65,7 +65,7 @@ module Piggybak
       return
     end
 
-    def admin_label
+    def details
       if !self.new_record? 
         return "Payment ##{self.id} (#{self.created_at.strftime("%m-%d-%Y")}): " #+ 
           #"$#{"%.2f" % self.total}" reference line item total here instead
@@ -73,7 +73,6 @@ module Piggybak
         return ""
       end
     end
-    alias :details :admin_label
 
     validates_each :payment_method_id do |record, attr, value|
       if record.new_record?

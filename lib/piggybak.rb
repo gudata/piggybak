@@ -99,12 +99,6 @@ module Piggybak
             field :recorded_changer, :hidden do
               partial "recorded_changer"
             end
-            # TODO: Figure out why this doesn't work here
-            #field :recorded_changer, :hidden do
-            #  default_value do
-            #    bindings[:view]._current_user.id
-            #  end
-            #end
             field :status do
               visible do
                 !bindings[:object].new_record?
@@ -229,7 +223,6 @@ module Piggybak
         end
       
         config.model Piggybak::Shipment do
-          object_label_method :admin_label
           visible false
 
           edit do
@@ -241,13 +234,6 @@ module Piggybak
             field :status do
               label "Shipping Status"
             end
-            #field :total do
-            #  read_only true
-            #  formatted_value do
-            #    "$%.2f" % value
-            #  end
-            #  help "This will automatically be calculated at the time of processing."
-            #end
           end
         end
     
@@ -278,7 +264,6 @@ module Piggybak
         end
 
         config.model Piggybak::Payment do
-          object_label_method :admin_label
           visible false
 
           edit do
