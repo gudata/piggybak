@@ -12,7 +12,7 @@ module Piggybak
     attr_accessor :number
     attr_accessor :verification_value
 
-    attr_accessible :number, :verification_value, :month, :year, :total, 
+    attr_accessible :number, :verification_value, :month, :year,
                     :transaction_id, :masked_number
     
     def status_enum

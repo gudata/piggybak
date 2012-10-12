@@ -28,8 +28,7 @@ module Piggybak
     default_scope :order => 'created_at DESC'
 
     attr_accessible :email, :phone, :billing_address_attributes, 
-                    :shipping_address_attributes, :payments_attributes,
-                    :shipments_attributes
+                    :shipping_address_attributes, :line_items_attributes
                     
     def initialize_defaults
       self.recorded_changes ||= []

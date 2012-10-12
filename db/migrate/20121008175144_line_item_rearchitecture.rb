@@ -56,22 +56,41 @@ class LineItemRearchitecture < ActiveRecord::Migration
   end
 
   def down
+    add_column :shipments, :total, :decimal, :null => false, :default => 0.0
+    add_column :payments, :total, :decimal, :null => false, :default => 0.0
+    add_column :adjustments, :total, :decimal
+    add_column :shipments, :order_id, :integer, :null => false, :default => 0
+    add_column :payments, :order_id, :integer, :null => false, :default => 0
+    add_column :adjustments, :order_id, :integer, :null => false, :default => 0
+
+    add_column :orders, :tax_charge, :decimal, :null => false, :default => 0.0
+
+    to_delete = []
+    Piggybak::LineItem.all.each do |line_item|
+      if line_item.line_item_type == "payment"
+        line_item.payment.update_attributes({ :order_id => line_item.order_id, :total => line_item.price }) 
+        to_delete << line_item
+      elsif line_item.line_item_type == "shipment"
+        line_item.shipment.update_attributes({ :order_id => line_item.order_id, :total => line_item.price }) 
+        to_delete << line_item
+      elsif line_item.line_item_type == "adjustment"
+        to_delete << line_item
+        line_item.adjustment.update_attributes({ :order_id => line_item.order_id, :total => line_item.price }) 
+      elsif line_item.line_item_type == "tax"
+        line_item.order.update_attribute(:tax_charge, line_item.price)
+        to_delete << line_item
+      end
+    end
+    Piggybak::LineItem.destroy(to_delete)
+
+    remove_column :shipments, :line_item_id
+    remove_column :payments, :line_item_id
+
+    remove_column :line_items, :line_item_type
     remove_column :line_items, :updated_at
     remove_column :line_items, :created_at
     remove_column :line_items, :sort
     rename_column :line_items, :price, :total
     rename_column :line_items, :unit_price, :price
-
-    # Populate shipping, payments, adjusments, tax charge with values
-    # Delete line items for shipment, payment, adjustment, tax
-
-    add_column :shipments, :total, :decimal, :null => false, :default => 0.0
-    add_column :payments, :total, :decimal, :null => false, :default => 0.0
-    add_column :adjustments, :total, :decimal
-    add_column :shipments, :order_id, :integer, :null => false
-    add_column :payments, :order_id, :integer, :null => false
-    add_column :adjustments, :order_id, :integer, :null => false
-
-    add_column :orders, :tax_charge, :decimal, :null => false, :default => 0.0
   end
 end

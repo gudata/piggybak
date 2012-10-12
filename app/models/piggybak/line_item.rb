@@ -17,8 +17,8 @@ module Piggybak
     after_destroy :increase_inventory, :if => Proc.new { |line_item| line_item.line_item_type == 'sellable' && !line_item.sellable.unlimited_inventory }
     after_update :update_inventory, :if => Proc.new { |line_item| line_item.line_item_type == 'sellable' && !line_item.sellable.unlimited_inventory }
 
-    attr_accessible :sellable_id, :price, :unit_price, :description, :quantity,
-                    :payments_attributes, :shipments_attributes
+    attr_accessible :sellable_id, :price, :unit_price, :description, :quantity, :line_item_type,
+                    :payment_attributes, :shipment_attributes
 
     has_one :payment
     accepts_nested_attributes_for :payment
